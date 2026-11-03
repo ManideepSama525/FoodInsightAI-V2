@@ -1,0 +1,4 @@
+Alembic migrations are stored in `backend/migrations/versions`.
+Apply the schema with `alembic upgrade head` from the repository root.
+Create later revisions with `alembic revision --autogenerate -m "describe change"`,
+review the generated migration, then test upgrade and downgrade on a disposable database.
