@@ -1,4 +1,7 @@
-﻿from fastapi import FastAPI, HTTPException
+from contextlib import asynccontextmanager
+from collections.abc import AsyncIterator
+
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
@@ -6,11 +9,22 @@ from backend.app.api.router import api_router
 from backend.app.core.config import get_settings
 from backend.app.core.errors import DomainError, domain_error_handler
 from backend.app.db.session import engine
+from backend.app.services.knowledge_graph import knowledge_graph
 
 settings = get_settings()
 production = settings.app_env == "production"
 
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    try:
+        yield
+    finally:
+        knowledge_graph.close()
+
+
 app = FastAPI(
+    lifespan=lifespan,
     title=settings.app_name,
     version="0.2.0",
     description="Food recognition, nutrition intelligence and recipe analysis API.",
@@ -23,7 +37,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["Content-Type", "Authorization"],
 )
 
@@ -87,4 +101,17 @@ def readiness() -> dict[str, str]:
             detail="Database is not ready.",
         ) from exc
 
-    return {"status": "ready", "database": "connected"}
+    graph_status = "disabled"
+    if knowledge_graph.enabled:
+        if not knowledge_graph.verify():
+            raise HTTPException(
+                status_code=503,
+                detail="Knowledge graph is not ready.",
+            )
+        graph_status = "connected"
+
+    return {
+        "status": "ready",
+        "database": "connected",
+        "knowledge_graph": graph_status,
+    }

@@ -6,7 +6,7 @@ COPY pyproject.toml README.md ./
 COPY backend ./backend
 COPY docs ./docs
 COPY alembic.ini ./
-RUN python -m pip install --upgrade pip && pip install .
+RUN python -m pip install --upgrade pip && pip install . && pip install --index-url https://download.pytorch.org/whl/cpu torch==2.6.0 "numpy>=1.26,<3.0"
 RUN mkdir -p /app/storage/uploads /app/artifacts && chown -R app:app /app
 USER app
 EXPOSE 8000

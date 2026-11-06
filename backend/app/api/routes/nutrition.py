@@ -47,10 +47,22 @@ async def import_usda_food(fdc_id: int, db: Session = Depends(get_db)) -> Food:
     return save_food(db, food)
 
 @router.get("/foods/{food_id}/calculate")
-def calculate_food(food_id: int, quantity_g: Decimal = Query(gt=0, le=100000), db: Session = Depends(get_db)) -> dict:
+def calculate_food(
+    food_id: int,
+    quantity_g: Decimal = Query(gt=0, le=100000),
+    quantity_source: str = Query(default="user_entered", pattern="^(user_entered|estimated)$"),
+    db: Session = Depends(get_db),
+) -> dict:
     from sqlalchemy import select
     from sqlalchemy.orm import selectinload
-    food = db.scalars(select(Food).options(selectinload(Food.nutrients)).where(Food.id == food_id)).unique().first()
+
+    food = db.scalars(
+        select(Food)
+        .options(selectinload(Food.nutrients))
+        .where(Food.id == food_id)
+    ).unique().first()
+
     if food is None:
         raise HTTPException(status_code=404, detail="Food not found.")
-    return calculate_food_nutrition(food, quantity_g)
+
+    return calculate_food_nutrition(food, quantity_g, quantity_source)

@@ -1,4 +1,23 @@
 services:
+  neo4j:
+    image: neo4j:5.26-community
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:?Set NEO4J_PASSWORD in .env}
+      NEO4J_server_memory_heap_initial__size: 256m
+      NEO4J_server_memory_heap_max__size: 512m
+    ports:
+      - "127.0.0.1:7474:7474"
+      - "127.0.0.1:7687:7687"
+    volumes:
+      - foodinsightai_neo4j_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p \"$${NEO4J_AUTH#*/}\" 'RETURN 1' >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+    restart: unless-stopped
+
   backend:
     build:
       context: .
@@ -9,13 +28,22 @@ services:
       APP_ENV: production
       DATABASE_URL: sqlite:////app/storage/foodinsightai.db
       UPLOAD_DIRECTORY: /app/storage/uploads
+      RECOGNITION_MODEL_VERSION: food101-efficientnetv2s-v1
       RECOGNITION_MODEL_PATH: /app/artifacts/food_classifier.ts
       RECOGNITION_LABELS_PATH: /app/artifacts/classes.json
+      KNOWLEDGE_GRAPH_ENABLED: ${KNOWLEDGE_GRAPH_ENABLED:-true}
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USERNAME: ${NEO4J_USERNAME:-neo4j}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD}
+      NEO4J_DATABASE: ${NEO4J_DATABASE:-neo4j}
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     volumes:
       - foodinsightai_data:/app/storage
       - ./artifacts:/app/artifacts:ro
+    depends_on:
+      neo4j:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/system/readiness', timeout=3)"]
       interval: 20s
@@ -31,7 +59,7 @@ services:
       args:
         NEXT_PUBLIC_API_BASE_URL: http://localhost:8000/api/v1
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     depends_on:
       backend:
         condition: service_healthy
@@ -39,3 +67,4 @@ services:
 
 volumes:
   foodinsightai_data:
+  foodinsightai_neo4j_data:

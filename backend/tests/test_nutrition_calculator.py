@@ -24,3 +24,25 @@ def test_recipe_aggregation_sums_ingredients():
     food_b = SimpleNamespace(nutrients=[nutrient("protein", "5")])
     rows = aggregate_recipe_nutrition([(food_a, Decimal("100")), (food_b, Decimal("200"))])
     assert rows[0]["amount"] == Decimal("20.00")
+
+
+def test_food_calculation_records_user_entered_quantity():
+    food = SimpleNamespace(id=3, name="Cooked rice", nutrients=[nutrient("protein", "2.5")])
+    result = calculate_food_nutrition(food, Decimal("150"))
+    assert result["quantity_source"] == "user_entered"
+    assert result["quantity_note"] == "Quantity entered by the user."
+
+
+def test_food_calculation_marks_estimated_quantity_as_unmeasured():
+    food = SimpleNamespace(id=3, name="Cooked rice", nutrients=[nutrient("protein", "2.5")])
+    result = calculate_food_nutrition(food, Decimal("150"), "estimated")
+    assert result["quantity_source"] == "estimated"
+    assert "not measured from the image" in result["quantity_note"]
+
+
+def test_food_calculation_rejects_unknown_quantity_source():
+    import pytest
+
+    food = SimpleNamespace(id=3, name="Cooked rice", nutrients=[nutrient("protein", "2.5")])
+    with pytest.raises(ValueError, match="quantity_source"):
+        calculate_food_nutrition(food, Decimal("150"), "image_measured")

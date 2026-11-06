@@ -1,7 +1,7 @@
 FROM node:22-alpine AS dependencies
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+RUN npm ci --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000 --fetch-timeout=300000
 
 FROM node:22-alpine AS builder
 WORKDIR /app

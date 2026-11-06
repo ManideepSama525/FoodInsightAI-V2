@@ -10,9 +10,11 @@ SUPPORTED_MACROS = ("energy_kcal", "protein", "total_carbohydrate", "total_fat",
 def _quantize(value: Decimal) -> Decimal:
     return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
-def calculate_food_nutrition(food: Food, quantity_g: Decimal) -> dict:
+def calculate_food_nutrition(food: Food, quantity_g: Decimal, quantity_source: str = "user_entered") -> dict:
     if quantity_g <= ZERO:
         raise ValueError("quantity_g must be greater than zero")
+    if quantity_source not in ("user_entered", "estimated"):
+        raise ValueError("quantity_source must be 'user_entered' or 'estimated'")
     totals: dict[str, Decimal | None] = {}
     factor = quantity_g / Decimal("100")
     for nutrient in food.nutrients:
@@ -26,6 +28,12 @@ def calculate_food_nutrition(food: Food, quantity_g: Decimal) -> dict:
         "food_id": food.id,
         "food_name": food.name,
         "quantity_g": _quantize(quantity_g),
+        "quantity_source": quantity_source,
+        "quantity_note": (
+            "Quantity entered by the user."
+            if quantity_source == "user_entered"
+            else "Approximate quantity supplied by the user; not measured from the image."
+        ),
         "nutrients": [
             {"nutrient_key": n.nutrient_key, "display_name": n.display_name,
              "amount": totals.get(n.nutrient_key), "unit": n.unit}

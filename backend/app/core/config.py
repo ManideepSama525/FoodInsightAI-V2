@@ -1,7 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -20,6 +20,14 @@ class Settings(BaseSettings):
     recognition_model_version: str = "untrained"
     recognition_confidence_threshold: float = 0.65
     recognition_image_size: int = 224
+    jwt_secret_key: str = "development-only-change-this-secret-key"
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 10080
+    knowledge_graph_enabled: bool = False
+    neo4j_uri: str = "bolt://localhost:7687"
+    neo4j_username: str = "neo4j"
+    neo4j_password: str = ""
+    neo4j_database: str = "neo4j"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
@@ -64,6 +72,22 @@ class Settings(BaseSettings):
         if not 32 <= value <= 1024:
             raise ValueError("RECOGNITION_IMAGE_SIZE must be between 32 and 1024")
         return value
+
+    @field_validator("access_token_expire_minutes")
+    @classmethod
+    def validate_token_expiry(cls, value: int) -> int:
+        if not 5 <= value <= 43200:
+            raise ValueError("ACCESS_TOKEN_EXPIRE_MINUTES must be between 5 and 43200")
+        return value
+
+    @model_validator(mode="after")
+    def validate_jwt_secret(self):
+        if self.app_env == "production":
+            if len(self.jwt_secret_key) < 40:
+                raise ValueError("A strong JWT_SECRET_KEY is required in production")
+            if self.jwt_secret_key == "development-only-change-this-secret-key":
+                raise ValueError("The development JWT secret cannot be used in production")
+        return self
 
 
 @lru_cache

@@ -1,4 +1,4 @@
-﻿__pycache__/
+__pycache__/
 *.py[cod]
 *.egg-info/
 .venv/
@@ -35,7 +35,30 @@ artifacts/
 *.pt
 *.pth
 *.onnx
-/artifacts/*.ts
-/frontend/next-env.d.ts
-/frontend/tsconfig.tsbuildinfo
-/frontend/src/app/globals.css.backup
+# Preserve TypeScript application source files
+
+# Local frontend source backups
+frontend/profile-integration-backup-*/
+
+# Local datasets, caches, test images and backups
+data/
+backups/
+test-images/
+torch-cache/
+
+# Local databases and runtime data
+*.db
+*.sqlite
+*.sqlite3
+storage/
+uploads/
+
+# Local editor/build metadata
+*.tsbuildinfo
+
+# Local implementation backups
+*.backup
+*.backup-*
+*.bak
+# Exclude local backup directories anywhere in the project
+**/*backup*/

@@ -1,101 +1,94 @@
 # FoodInsightAI V2
 
-FoodInsightAI V2 is a third-year academic project for food image recognition, food composition lookup, nutrition calculation and recipe analysis.
+FoodInsightAI V2 is a third-year academic project combining food recognition, nutrition analysis, food-safety checks, personal food records, recipe workflows, and a food knowledge graph.
+
+This repository contains the current development milestone. It is an active academic project; not every planned research capability is complete.
+
+## Implemented capabilities
+
+- FastAPI backend with authenticated user workflows.
+- Food catalog search and USDA FoodData Central integration.
+- Nutrient calculations with unknown values retained as unknown.
+- Food image preprocessing and TorchScript classification integration.
+- Deterministic food-safety checks for known allergy, dietary, and preference conflicts.
+- Personal food profiles, diary records, and user-scoped recipe workflows.
+- Neo4j knowledge graph foundation for food, nutrient, recipe, and ingredient relationships.
+- Personalized food recommendations.
+- Portion-based nutrition calculations with quantity-source provenance.
+- Responsive Next.js, React, and TypeScript frontend.
+- Docker Compose deployment configuration and backend automated tests.
+
+## Recognition and model status
+
+A Food-101 EfficientNetV2-S baseline classifier was trained and evaluated during development. The reported baseline reached approximately 87.6% top-1 and 97.6% top-5 accuracy on the official Food-101 test split.
+
+Trained model weights and datasets are intentionally excluded from this repository. Model artifacts must be supplied separately using the configured environment paths.
+
+The current classifier is a single-label baseline. It is not a multi-food object detector. Image-derived portion estimation is not yet implemented.
+
+## Remaining work
+
+- Multi-food detection and localization.
+- Indian-food-specific model training and evaluation.
+- Improved image-based portion estimation.
+- Hybrid retrieval combining SQL, graph, and vector retrieval.
+- Evidence aggregation, source-conflict handling, and claim verification.
+- Additional end-to-end, deployment, and user-acceptance validation.
+- Final academic documentation, presentation, and demonstration preparation.
+
+Model training and evaluation remain explicit project workstreams. Training data and model binaries are excluded from GitHub because of their size and data-provenance considerations.
 
 ## Repository structure
 
-- `backend/` — FastAPI, SQLAlchemy models, Alembic migrations, service integrations and tests.
-- `frontend/` — Next.js, React, TypeScript and Tailwind application.
-- `docs/` — architecture, data provenance, API, evaluation, security, training and graph handoff documentation.
-- `scripts/` — PowerShell setup and validation helpers.
+- `backend/` — FastAPI application, services, migrations, and tests.
+- `frontend/` — Next.js application.
+- `docs/` — architecture, setup, security, evaluation, training, and project documentation.
+- `scripts/` — dataset preparation and utility scripts.
+- `training/` — model training, evaluation, and analysis scripts.
 - `docker-compose.yml` — local container orchestration.
-
-## Implemented application workflows
-
-- Local food catalog search and USDA FoodData Central search/import.
-- IFCT-derived CSV import support for data supplied with appropriate rights/licensing.
-- Food nutrient calculation by gram portion, retaining unknown nutrient values as null.
-- Recipe creation from catalog ingredients and per-serving nutrient aggregation.
-- Food image preprocessing and pluggable TorchScript inference interface.
-- Responsive frontend for food search, import, image upload and recipe workflows.
-
-## Important unfinished project work
-
-- A trained food classifier is not included. Recognition returns HTTP 503 until a compatible model and class-label JSON are provided.
-- No populated knowledge graph or graph database is included. See `docs/KNOWLEDGE_GRAPH_HANDOFF.md`.
-- Real IFCT dataset import requires the project owner to provide licensed source data.
-- No user authentication, authorization, distributed rate limiting or malware scanning is implemented. Review `docs/SECURITY_QA.md` before any public deployment.
-- Frontend production build and Docker deployment must be verified on the target machine.
 
 ## Local setup
 
-Requirements: Python 3.12, Node.js 22 LTS, npm and Git. Docker Desktop is optional.
+Requirements: Python 3.12, Node.js 22, npm, and optionally Docker Desktop.
 
-Backend (PowerShell, repository root):
+Create a local environment file by copying `.env.example` to `.env`. Configure local values as required. Never commit `.env` or production credentials.
 
-```powershell
-py -3.12 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-pip install -e ".[dev]"
-Copy-Item .env.example .env
-python -m pytest backend/tests -q
-uvicorn backend.app.main:app --reload
-```
+### Docker
 
-Frontend (second PowerShell window):
+From the repository root, run:
 
-```powershell
-cd frontend
-npm install
-npm run dev
-```
+    docker compose build
+    docker compose up -d
 
-Open `http://localhost:3000`. Backend API is at `http://localhost:8000`; interactive docs are at `/docs` in development.
+Apply database migrations using `docs/DOCKER_DEPLOYMENT.md`.
 
-## Docker
+Frontend: http://localhost:3000
 
-```powershell
-Copy-Item .env.example .env
-docker compose build
-docker compose run --rm backend alembic upgrade head
-docker compose up -d
-```
+Backend: http://localhost:8000
 
-Open `http://localhost:3000`. See `docs/DOCKER_DEPLOYMENT.md`.
+### Backend tests
 
-## Verification
+Install project and development dependencies, then run:
 
-Backend:
+    python -m pytest backend/tests -q
 
-```powershell
-python -m compileall backend
-python -m pytest backend/tests -q
-python -m ruff check backend
-```
+### Frontend checks
 
-Frontend, from `frontend/`:
+From the `frontend/` directory, run:
 
-```powershell
-npm ci
-npm run typecheck
-npm run lint
-npm run build
-```
+    npm ci
+    npm run typecheck
+    npm run lint
+    npm run build
 
 Only report checks as passed after they have actually run in the target environment.
 
+## Data, secrets, and artifacts
+
+Datasets, local databases, uploads, environment files, backups, caches, and trained model binaries are excluded from this repository. Obtain datasets from their original sources and verify their licenses and provenance before use.
+
+Never commit API keys, passwords, access tokens, private keys, or production environment files.
+
 ## Project documentation
 
-- `docs/ARCHITECTURE.md`
-- `docs/LOCAL_SETUP.md`
-- `docs/PROJECT_ROADMAP.md`
-- `docs/NUTRITION_DATA.md`
-- `docs/NUTRITION_CALCULATIONS.md`
-- `docs/RECOGNITION_API.md`
-- `docs/MODEL_TRAINING_HANDOFF.md`
-- `docs/KNOWLEDGE_GRAPH_HANDOFF.md`
-- `docs/INTEGRATION_EVALUATION.md`
-- `docs/SECURITY_QA.md`
-- `docs/DOCKER_DEPLOYMENT.md`
-- `docs/ACADEMIC_SUBMISSION_GUIDE.md`
+See `docs/` for architecture, setup, nutrition calculations, recognition, model training, knowledge graph, security, evaluation, deployment, and academic submission guidance.
