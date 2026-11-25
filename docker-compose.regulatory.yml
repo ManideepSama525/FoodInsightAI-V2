@@ -1,0 +1,4 @@
+services:
+  backend:
+    volumes:
+      - ./data/regulatory/fssai:/app/data/regulatory/fssai:ro

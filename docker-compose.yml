@@ -1,0 +1,141 @@
+﻿services:
+  neo4j:
+    image: neo4j:5.26-community
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:?Set NEO4J_PASSWORD in .env}
+      NEO4J_server_memory_heap_initial__size: 256m
+      NEO4J_server_memory_heap_max__size: 512m
+    ports:
+      - "127.0.0.1:7474:7474"
+      - "127.0.0.1:7687:7687"
+    volumes:
+      - foodinsightai_neo4j_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p \"$${NEO4J_AUTH#*/}\" 'RETURN 1' >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+    restart: unless-stopped
+
+  freshness:
+    build:
+      context: ../FoodInsightAI-ModelTraining
+      dockerfile: freshness_service/Dockerfile
+    environment:
+      FRESHNESS_DEVICE: cpu
+      FRESHNESS_CHECKPOINT: /app/outputs/freshness_v1/best_model.pt
+    expose:
+      - "8100"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import json,urllib.request; d=json.load(urllib.request.urlopen('http://127.0.0.1:8100/health',timeout=5)); assert d['status']=='ready' and d['model_loaded'] and d['category_count']==24"
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    restart: unless-stopped
+
+  toxifruit:
+    build:
+      context: ../FoodInsightAI-ModelTraining
+      dockerfile: toxifruit_service/Dockerfile
+    environment:
+      TOXIFRUIT_CHECKPOINT: /app/outputs/food_fraud_toxifruit_vegetable_grouped_letterbox_v2/best_model.pt
+      TOXIFRUIT_MAX_UPLOAD_BYTES: "10485760"
+    expose:
+      - "8101"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import json,urllib.request; d=json.load(urllib.request.urlopen('http://127.0.0.1:8101/health',timeout=5)); assert d['status']=='ready' and d['model_loaded'] and d['class_count']==22"
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file:
+      - .env
+    environment:
+      APP_ENV: production
+      SENTINEL_XDR_URL: "http://host.docker.internal:8010"
+      SENTINEL_INGEST_TOKEN: "${SENTINEL_INGEST_TOKEN:?Set SENTINEL_INGEST_TOKEN in the PowerShell process environment}"
+      SENTINEL_ACCOUNT_HASH_KEY: "${SENTINEL_ACCOUNT_HASH_KEY:?Set SENTINEL_ACCOUNT_HASH_KEY in the PowerShell process environment}"
+
+      SENTINEL_RESPONSE_TOKEN: "${SENTINEL_RESPONSE_TOKEN:?Set SENTINEL_RESPONSE_TOKEN}"
+      FRESHNESS_SERVICE_URL: http://freshness:8100
+      TOXIFRUIT_SERVICE_URL: http://toxifruit:8101
+      DATABASE_URL: sqlite:////app/storage/foodinsightai.db
+      UPLOAD_DIRECTORY: /app/storage/uploads
+      RECOGNITION_MODEL_VERSION: food101-efficientnetv2s-v1
+      RECOGNITION_MODEL_PATH: /app/artifacts/food_classifier.ts
+      RECOGNITION_LABELS_PATH: /app/artifacts/classes.json
+      INDIAN_RECOGNITION_MODEL_PATH: /app/artifacts/indian_food_v1/indian_food_classifier.ts
+      INDIAN_RECOGNITION_LABELS_PATH: /app/artifacts/indian_food_v1/classes.json
+      INDIAN_RECOGNITION_MODEL_VERSION: indian-food-v1
+      INDIAN_RECOGNITION_CONFIDENCE_THRESHOLD: "0.65"
+      INDIAN_RECOGNITION_TEMPERATURE: "0.583016488786505"
+      KNOWLEDGE_GRAPH_ENABLED: ${KNOWLEDGE_GRAPH_ENABLED:-true}
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USERNAME: ${NEO4J_USERNAME:-neo4j}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD}
+      NEO4J_DATABASE: ${NEO4J_DATABASE:-neo4j}
+      EMBEDDING_MODEL_NAME: BAAI/bge-small-en-v1.5
+      EMBEDDING_DIMENSIONS: "384"
+      EMBEDDING_BATCH_SIZE: "32"
+      EMBEDDING_CACHE_DIR: /app/storage/model_cache
+      HF_HOME: /app/storage/model_cache
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - foodinsightai_data:/app/storage
+      - ./artifacts:/app/artifacts:ro
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      freshness:
+        condition: service_healthy
+      toxifruit:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/system/readiness', timeout=3)"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:8000/api/v1
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000').then(r => process.exit(r.status === 200 ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  foodinsightai_data:
+  foodinsightai_neo4j_data:

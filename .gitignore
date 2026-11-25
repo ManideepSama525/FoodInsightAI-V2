@@ -1,0 +1,64 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+.env
+.env.*
+!.env.example
+node_modules/
+.next/
+out/
+.turbo/
+coverage/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.sqlite3
+*.db
+storage/
+uploads/
+
+# Large local datasets and trained model artifacts
+datasets/
+artifacts/
+*.pt
+*.pth
+*.onnx
+# Preserve TypeScript application source files
+
+# Local frontend source backups
+frontend/profile-integration-backup-*/
+
+# Local datasets, caches, test images and backups
+data/
+backups/
+test-images/
+torch-cache/
+
+# Local databases and runtime data
+*.db
+*.sqlite
+*.sqlite3
+storage/
+uploads/
+
+# Local editor/build metadata
+*.tsbuildinfo
+
+# Local implementation backups
+*.backup
+*.backup-*
+.ml-venv/
+*.before-indian-model
+*.bak
