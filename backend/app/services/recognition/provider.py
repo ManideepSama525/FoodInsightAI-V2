@@ -82,14 +82,17 @@ class RecognitionService:
 
 class TorchScriptRuntime:
     """Optional CPU-capable TorchScript adapter. Import torch only when this runtime is selected."""
-    def __init__(self, model_path: Path) -> None:
+    def __init__(self, model_path: Path, temperature: float = 1.0) -> None:
         try:
             import torch
         except ImportError as exc:
             raise ModelNotReadyError("Install the optional 'vision' dependencies to run inference.") from exc
         if not model_path.is_file():
             raise ModelNotReadyError(f"Model artifact not found: {model_path}")
+        if not 0.05 <= temperature <= 20.0:
+            raise ValueError("temperature must be between 0.05 and 20")
         self._torch = torch
+        self._temperature = temperature
         self._model = torch.jit.load(str(model_path), map_location="cpu")
         self._model.eval()
 
@@ -103,7 +106,7 @@ class TorchScriptRuntime:
             logits = self._model((tensor - mean) / std)
             if isinstance(logits, (tuple, list)):
                 logits = logits[0]
-            probabilities = self._torch.softmax(logits, dim=1)[0]
+            probabilities = self._torch.softmax(logits / self._temperature, dim=1)[0]
             scores, indices = self._torch.topk(probabilities, k=min(top_k, probabilities.numel()))
         return [
             RawPrediction(int(index.item()), float(score.item()))
@@ -116,6 +119,7 @@ def build_prediction_provider(
     model_version: str,
     confidence_threshold: float,
     image_size: int,
+    temperature: float = 1.0,
 ) -> PredictionProvider:
     if not model_path.is_file() or not labels_path.is_file():
         return UnavailablePredictionProvider()
@@ -124,7 +128,7 @@ def build_prediction_provider(
         labels = labels_data["classes"] if isinstance(labels_data, dict) else labels_data
         if not isinstance(labels, list) or not all(isinstance(label, str) for label in labels):
             raise ValueError("Label file must be a JSON list or an object with a 'classes' list.")
-        runtime = TorchScriptRuntime(model_path)
+        runtime = TorchScriptRuntime(model_path, temperature=temperature)
         return RecognitionService(runtime, labels, model_version, confidence_threshold, image_size)
     except (OSError, json.JSONDecodeError, KeyError, ValueError) as exc:
         raise ModelNotReadyError(f"Could not load recognition model configuration: {exc}") from exc

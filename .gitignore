@@ -59,6 +59,6 @@ uploads/
 # Local implementation backups
 *.backup
 *.backup-*
+.ml-venv/
+*.before-indian-model
 *.bak
-# Exclude local backup directories anywhere in the project
-**/*backup*/

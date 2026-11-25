@@ -17,7 +17,7 @@ NUTRIENT_MAP: dict[int, tuple[str, str]] = {
     1092: ("potassium", "mg"),
     1087: ("calcium", "mg"),
     1089: ("iron", "mg"),
-    1106: ("vitamin_a", "µg"),
+    1106: ("vitamin_a", "Âµg"),
     1162: ("vitamin_c", "mg"),
 }
 
@@ -51,15 +51,15 @@ def map_usda_food(payload: dict[str, Any]) -> Food:
     seen: set[str] = set()
     for item in payload.get("foodNutrients", []):
         nutrient = item.get("nutrient") if isinstance(item.get("nutrient"), dict) else item
-        number = nutrient.get("number")
+        nutrient_id = nutrient.get("id")
         try:
-            number = int(number)
+            nutrient_id = int(nutrient_id)
         except (TypeError, ValueError):
             continue
-        if number not in NUTRIENT_MAP:
+        if nutrient_id not in NUTRIENT_MAP:
             continue
 
-        key, canonical_unit = NUTRIENT_MAP[number]
+        key, canonical_unit = NUTRIENT_MAP[nutrient_id]
         if key in seen:
             continue
         seen.add(key)
@@ -69,6 +69,10 @@ def map_usda_food(payload: dict[str, Any]) -> Food:
         # Preserve canonical units only when USDA's unit agrees. Unknown unit
         # variants are retained as reported rather than silently converted.
         unit = canonical_unit if not source_unit else str(source_unit)
+
+        derivation = item.get("foodNutrientDerivation") or {}
+        derivation_source = derivation.get("foodNutrientSource") or {}
+
         food.nutrients.append(
             FoodNutrient(
                 nutrient_key=key,
@@ -77,7 +81,10 @@ def map_usda_food(payload: dict[str, Any]) -> Food:
                 unit=unit,
                 basis_g=Decimal("100"),
                 source="usda_fdc",
-                source_nutrient_id=str(number),
+                source_nutrient_id=str(nutrient_id),
+                derivation_code=derivation.get("code"),
+                derivation_description=derivation.get("description"),
+                derivation_source_description=derivation_source.get("description"),
             )
         )
     return food
@@ -93,3 +100,4 @@ def map_usda_search_result(item: dict[str, Any]) -> dict[str, Any]:
         "food_category": item.get("foodCategory"),
         "publication_date": item.get("publishedDate"),
     }
+

@@ -8,6 +8,59 @@ CONFIDENCE_THRESHOLD = 0.75
 
 ALIASES = {
     "groundnut": "peanut",
+    "dairy": "milk",
+    "paneer": "milk",
+    "cottage cheese": "milk",
+    "dahi": "milk",
+    "lassi": "milk",
+    "ricotta": "milk",
+    "mozzarella": "milk",
+    "feta": "milk",
+    "cheese": "milk",
+    "curd": "milk",
+    "yogurt": "milk",
+    "yoghurt": "milk",
+    "ghee": "milk",
+    "butter": "milk",
+    "cream": "milk",
+    "khoya": "milk",
+    "mawa": "milk",
+    "malai": "milk",
+    "buttermilk": "milk",
+    "egg whites": "egg",
+    "egg yolks": "egg",
+    "eggs": "egg",
+    "tofu": "soy",
+    "tempeh": "soy",
+    "edamame": "soy",
+    "soybean": "soy",
+    "soybeans": "soy",
+    "soya chunks": "soy",
+    "soy sauce": "soy",
+    "soya sauce": "soy",
+    "almonds": "tree nuts",
+    "cashews": "tree nuts",
+    "walnuts": "tree nuts",
+    "pistachios": "tree nuts",
+    "hazelnuts": "tree nuts",
+    "prawns": "crustacean shellfish",
+    "shrimps": "crustacean shellfish",
+    "oyster": "molluscan shellfish",
+    "mussels": "molluscan shellfish",
+    "clams": "molluscan shellfish",
+    "scallop": "molluscan shellfish",
+    "scallops": "molluscan shellfish",
+    "salmon": "fish",
+    "tuna": "fish",
+    "cod": "fish",
+    "sardine": "fish",
+    "sardines": "fish",
+    "tilapia": "fish",
+    "rohu": "fish",
+    "pomfret": "fish",
+    "mackerel": "fish",
+    "anchovy": "fish",
+    "anchovies": "fish",
     "groundnuts": "peanut",
     "arachis": "peanut",
     "peanuts": "peanut",
@@ -23,7 +76,6 @@ ALIASES = {
     "pecan": "tree nuts",
     "brazil nut": "tree nuts",
     "macadamia": "tree nuts",
-    "gluten": "wheat",
     "semolina": "wheat",
     "suji": "wheat",
     "sooji": "wheat",
@@ -43,18 +95,22 @@ ANIMAL_INGREDIENTS = {
     "chicken", "mutton", "lamb", "beef", "pork", "fish",
     "prawn", "shrimp", "crab", "lobster", "meat",
     "gelatin", "lard", "anchovy", "bacon", "ham",
+    "chicken stock", "chicken broth", "meat stock", "fish stock",
+    "fish sauce", "oyster sauce", "salmon", "tuna", "cod", "sardine",
+    "tilapia", "rohu", "pomfret", "mackerel", "anchovies", "scallop",
 }
 
 DAIRY_INGREDIENTS = {
     "milk", "butter", "ghee", "cheese", "curd", "yogurt",
-    "cream", "whey", "casein", "paneer",
+    "cream", "whey", "casein", "paneer", "buttermilk",
+    "khoya", "mawa", "malai", "yoghurt", "dahi", "lassi",
 }
 
-EGG_INGREDIENTS = {"egg", "eggs", "mayonnaise"}
+EGG_INGREDIENTS = {"egg", "eggs", "mayonnaise", "egg white", "egg yolk"}
 
 JAIN_ROOT_INGREDIENTS = {
-    "onion", "garlic", "potato", "carrot", "beetroot",
-    "radish", "turnip", "ginger", "turmeric root",
+    "onion", "onions", "garlic", "potato", "potatoes", "carrot", "carrots", "beetroot", "beetroots",
+    "radish", "radishes", "turnip", "turnips", "ginger", "turmeric root",
 }
 
 VEGAN_CONFLICTS = (
@@ -78,37 +134,75 @@ def canonical(value: str) -> str:
     return ALIASES.get(value, value)
 
 
+_PLANT_MILK = re.compile(
+    r"\b(?:coconut|almond|soy|soya|oat|rice|cashew|pea|hemp)\s+milk\b"
+)
+_NUT_BUTTER = re.compile(r"\b(?:peanut|groundnut|almond|cashew|sunflower)\s+butter\b")
+
+
+def _mentions(name: str, term: str) -> bool:
+    return bool(re.search(r"(?<![a-z0-9])" + re.escape(term) + r"(?![a-z0-9])", name))
+
+
+def _is_exclusively_plant_milk(name: str) -> bool:
+    # Only omit the word 'milk' when every milk mention is explicitly plant-based.
+    plant_count = len(_PLANT_MILK.findall(name))
+    milk_count = len(re.findall(r"\bmilk\b", name))
+    other_text = _NUT_BUTTER.sub("", name).replace("coconut cream", "")
+    dairy_others = (
+        "paneer", "ghee", "cheese", "curd", "yogurt", "yoghurt",
+        "casein", "whey", "butter", "malai", "mawa", "khoya", "cream",
+        "dahi", "lassi", "ricotta", "mozzarella", "feta", "buttermilk",
+    )
+    return bool(milk_count and milk_count == plant_count and not any(
+        _mentions(other_text, token) for token in dairy_others
+    ))
+
+
+def _term_in_ingredient(name: str, token: str) -> bool:
+    if not _mentions(name, token):
+        return False
+    if token == "milk" and _is_exclusively_plant_milk(name):
+        return False
+    if token == "butter" and _NUT_BUTTER.search(name) and not _mentions(
+        _NUT_BUTTER.sub("", name), "butter"
+    ):
+        return False
+    if token == "cream" and _mentions(name, "coconut cream") and not _mentions(
+        name.replace("coconut cream", ""), "cream"
+    ):
+        return False
+    return True
+
+
 def ingredient_matches_concern(ingredient: str, concern: str) -> bool:
     ingredient_norm = normalize(ingredient)
     concern_norm = canonical(concern)
-
     if not ingredient_norm or not concern_norm:
         return False
 
-    # Normalize known aliases appearing inside compound ingredient names.
-    candidates = {canonical(ingredient_norm)}
-    for alias, target in ALIASES.items():
-        if re.search(r"(?<![a-z0-9])" + re.escape(alias) + r"(?![a-z0-9])", ingredient_norm):
-            candidates.add(target)
+    # Wheat allergy and gluten sensitivity are distinct; barley/rye do not
+    # imply wheat-protein exposure, but do matter for a gluten restriction.
+    if concern_norm == "gluten":
+        return any(_mentions(ingredient_norm, word) for word in (
+            "gluten", "wheat", "barley", "rye", "spelt", "atta",
+            "maida", "semolina", "suji", "sooji", "durum",
+        ))
+    if concern_norm == "lactose":
+        return any(_term_in_ingredient(ingredient_norm, word) for word in (
+            "lactose", "milk", "paneer", "curd", "yogurt", "yoghurt",
+            "buttermilk", "cream", "khoya", "mawa", "malai",
+        ))
 
-    if concern_norm in candidates:
+    # A plant-based milk is not automatically a milk-protein allergen.
+    if concern_norm == "milk" and _is_exclusively_plant_milk(ingredient_norm):
+        return False
+
+    if _term_in_ingredient(ingredient_norm, concern_norm):
         return True
-
-    # Match a complete phrase, not an arbitrary substring.
-    padded_ingredient = f" {ingredient_norm} "
-    padded_concern = f" {concern_norm} "
-    if padded_concern in padded_ingredient:
-        return True
-
-    # A broad profile concern such as "tree nuts" also matches its aliases.
     for alias, target in ALIASES.items():
-        if target == concern_norm:
-            if re.search(
-                r"(?<![a-z0-9])" + re.escape(alias) + r"(?![a-z0-9])",
-                ingredient_norm,
-            ):
-                return True
-
+        if target == concern_norm and _term_in_ingredient(ingredient_norm, alias):
+            return True
     return False
 
 
@@ -174,10 +268,15 @@ def assess_ingredients(ingredients: list[dict], profile) -> FoodSafetyRead:
                         severity=severity,
                         certainty=certainty,
                         message=(
-                            f"Possible {concern_type} conflict: {name} may contain "
-                            f"{concern_name}."
-                            if certainty == "possible"
-                            else f"Ingredient-list conflict: {name} matches your recorded {concern_type}."
+                            "Paneer is made from milk and conflicts with your recorded milk allergy."
+                            if concern_type == "allergy" and canonical(concern_name) == "milk"
+                            and _mentions(normalize(name), "paneer")
+                            else (
+                                f"Possible {concern_type} conflict: {name} may contain "
+                                f"{concern_name}."
+                                if certainty == "possible"
+                                else f"Ingredient-list conflict: {name} matches your recorded {concern_type}."
+                            )
                         ),
                     ))
 
@@ -199,7 +298,7 @@ def assess_ingredients(ingredients: list[dict], profile) -> FoodSafetyRead:
         certainty = _certainty(item.get("confidence"))
 
         for preference, forbidden in dietary_rules:
-            if normalized in forbidden:
+            if any(_term_in_ingredient(normalized, token) for token in forbidden):
                 matches.append(FoodSafetyMatch(
                     ingredient=name,
                     concern=preference,

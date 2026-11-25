@@ -1,4 +1,4 @@
-from decimal import Decimal
+﻿from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -11,6 +11,10 @@ class NutrientRead(BaseModel):
     unit: str
     basis_g: Decimal
     source: str
+    source_nutrient_id: str | None = None
+    derivation_code: str | None = None
+    derivation_description: str | None = None
+    derivation_source_description: str | None = None
 
 
 class FoodRead(BaseModel):
@@ -38,3 +42,4 @@ class FoodSearchResponse(BaseModel):
     query: str
     count: int
     results: list[FoodSearchResult]
+

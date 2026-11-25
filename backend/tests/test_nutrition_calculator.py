@@ -46,3 +46,38 @@ def test_food_calculation_rejects_unknown_quantity_source():
     food = SimpleNamespace(id=3, name="Cooked rice", nutrients=[nutrient("protein", "2.5")])
     with pytest.raises(ValueError, match="quantity_source"):
         calculate_food_nutrition(food, Decimal("150"), "image_measured")
+
+def test_negative_nutrient_is_unavailable_not_zero():
+    food = SimpleNamespace(
+        id=9, name="USDA source food",
+        nutrients=[nutrient("total_carbohydrate", "-0.475")]
+    )
+    result = calculate_food_nutrition(food, Decimal("100"))
+    assert result["nutrients"][0]["amount"] is None
+
+
+def test_zero_nutrient_remains_a_valid_zero():
+    food = SimpleNamespace(
+        id=10, name="Food with zero nutrient",
+        nutrients=[nutrient("total_carbohydrate", "0")]
+    )
+    result = calculate_food_nutrition(food, Decimal("100"))
+    assert result["nutrients"][0]["amount"] == Decimal("0.00")
+
+
+def test_invalid_basis_is_unavailable():
+    food = SimpleNamespace(
+        id=11, name="Invalid basis food",
+        nutrients=[nutrient("protein", "5", basis="0")]
+    )
+    result = calculate_food_nutrition(food, Decimal("100"))
+    assert result["nutrients"][0]["amount"] is None
+
+
+def test_recipe_aggregation_does_not_sum_negative_values():
+    food = SimpleNamespace(
+        nutrients=[nutrient("total_carbohydrate", "-0.475")]
+    )
+    rows = aggregate_recipe_nutrition([(food, Decimal("100"))])
+    assert rows[0]["amount"] is None
+

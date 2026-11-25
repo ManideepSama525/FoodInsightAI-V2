@@ -1,0 +1,15 @@
+services:
+  backend:
+    image: foodinsightai-recipe-bridge-candidate:v2
+    env_file:
+      - ./recipe-inference-lab/.recipe_bridge_service.env
+    environment:
+      FOOD_RECIPE_GENERATION_ENABLED: "1"
+      FOOD_RECIPE_INFERENCE_URL: "http://host.docker.internal:8023"
+      SENTINEL_LOGIN_GUARD_ENABLED: "1"
+      SENTINEL_XDR_URL: "http://host.docker.internal:8010"
+    volumes:
+      - type: bind
+        source: ./data/regulatory/fssai
+        target: /app/data/regulatory/fssai
+        read_only: true

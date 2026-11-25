@@ -84,6 +84,7 @@ export default function FoodProfilePanel({ recipes }: { recipes: Recipe[] }) {
 
   useEffect(() => {
     let active = true;
+    void loadRecommendations();
     api.getFoodProfile().then(data => {
       if (!active) return;
       setProfile(data);
@@ -93,7 +94,6 @@ export default function FoodProfilePanel({ recipes }: { recipes: Recipe[] }) {
       setGoals(data.goals);
       setDisliked(lines(data.disliked_foods));
       setCuisines(lines(data.cuisine_interests));
-      void loadRecommendations();
     }).catch(e => {
       if (active) setError(e instanceof Error ? e.message : "Could not load profile.");
     }).finally(() => {

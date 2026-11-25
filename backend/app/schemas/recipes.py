@@ -1,9 +1,11 @@
 from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field
 
+
 class RecipeIngredientCreate(BaseModel):
     food_id: int
     quantity_g: Decimal = Field(gt=0, le=100000)
+
 
 class RecipeCreate(BaseModel):
     name: str = Field(min_length=1, max_length=240)
@@ -11,13 +13,18 @@ class RecipeCreate(BaseModel):
     instructions: str | None = Field(default=None, max_length=5000)
     ingredients: list[RecipeIngredientCreate] = Field(min_length=1, max_length=100)
 
+
 class RecipeIngredientRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     food_id: int | None
     ingredient_name: str
-    quantity: Decimal
-    unit: str
+    quantity: Decimal | None
+    unit: str | None
+    raw_ingredient_text: str | None = None
+    mapping_status: str = "unmapped"
+    quantity_status: str = "unknown"
+
 
 class RecipeRead(BaseModel):
     id: int
@@ -27,3 +34,4 @@ class RecipeRead(BaseModel):
     ingredients: list[RecipeIngredientRead]
     nutrition_per_recipe: list[dict]
     nutrition_per_serving: list[dict]
+    nutrition_completeness: dict

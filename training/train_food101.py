@@ -1,4 +1,4 @@
-﻿import argparse
+import argparse
 import csv
 import json
 import os
@@ -121,7 +121,28 @@ def train_epoch(model, loader, criterion, optimizer, scaler, device):
             logits = model(images)
             loss = criterion(logits, labels)
 
+        if not torch.isfinite(loss):
+            raise RuntimeError("Non-finite training loss detected. Stopping safely.")
+
         scaler.scale(loss).backward()
+        scaler.unscale_(optimizer)
+
+        gradient_checks = [
+            torch.isfinite(parameter.grad).all()
+            for parameter in model.parameters()
+            if parameter.grad is not None
+        ]
+        gradients_finite = (
+            bool(torch.stack(gradient_checks).all().item())
+            if gradient_checks else False
+        )
+
+        if gradients_finite:
+            torch.nn.utils.clip_grad_norm_(
+                model.parameters(), max_norm=1.0
+            )
+
+        # GradScaler skips the optimizer update when unscale_ detected overflow.
         scaler.step(optimizer)
         scaler.update()
 

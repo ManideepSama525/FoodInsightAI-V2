@@ -1,4 +1,4 @@
-from datetime import timezone
+﻿from datetime import timezone
 from typing import Annotated
 import re
 import unicodedata
@@ -99,9 +99,21 @@ def assess_recipe(
     if recipe is None:
         raise HTTPException(status_code=404, detail="Recipe not found.")
 
-    ingredients = [{"name": item.ingredient_name, "confidence": 1.0} for item in recipe.ingredients]
+    ingredients = [
+        {
+            "name": item.ingredient_name,
+            "confidence": (
+                0.95
+                if item.food_id is not None
+                and item.mapping_status in {"exact_name", "approved_alias"}
+                else None
+            ),
+        }
+        for item in recipe.ingredients
+    ]
     if not ingredients:
         raise HTTPException(status_code=422, detail="This recipe has no ingredient records.")
 
     profile = db.scalar(select(UserFoodProfile).where(UserFoodProfile.user_id == user.id))
     return _assess(ingredients, profile)
+

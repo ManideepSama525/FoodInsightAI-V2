@@ -34,10 +34,14 @@ def _serialize(recipe: Recipe, db: Session) -> RecipeRead:
             ).unique().all()
         }
 
+    # The calculator accepts grams only. Never interpret cups, pieces, or
+    # unknown quantities as grams.
     pairs = [
         (foods[item.food_id], item.quantity)
         for item in recipe.ingredients
         if item.food_id in foods
+        and item.quantity is not None
+        and (item.unit or "").casefold() in {"g", "gram", "grams"}
     ]
     per_recipe = aggregate_recipe_nutrition(pairs)
     per_serving = []
@@ -61,6 +65,18 @@ def _serialize(recipe: Recipe, db: Session) -> RecipeRead:
         ingredients=recipe.ingredients,
         nutrition_per_recipe=per_recipe,
         nutrition_per_serving=per_serving,
+        nutrition_completeness={
+            "total_ingredients": len(recipe.ingredients),
+            "mapped_ingredients": sum(1 for item in recipe.ingredients if item.food_id is not None),
+            "ingredients_with_gram_quantities": sum(
+                1 for item in recipe.ingredients
+                if item.food_id is not None and item.quantity is not None
+                and (item.unit or "").casefold() in {"g", "gram", "grams"}
+            ),
+            "nutrition_calculated_ingredients": len(pairs),
+            "is_complete": bool(recipe.ingredients) and len(pairs) == len(recipe.ingredients),
+            "note": "Only canonically mapped ingredients with explicit gram quantities are included. Other ingredients are excluded; nutrition is partial when is_complete is false.",
+        },
     )
 
 

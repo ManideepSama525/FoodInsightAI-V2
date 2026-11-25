@@ -38,6 +38,8 @@ def main():
     parser.add_argument("--learning-rate", type=float, default=0.00002)
     parser.add_argument("--patience", type=int, default=2)
     parser.add_argument("--hard-class-weight", type=float, default=1.5)
+    parser.add_argument("--resume", action="store_true",
+                        help="Resume from the latest fine-tuning checkpoint.")
     args = parser.parse_args()
 
     if not torch.cuda.is_available():
@@ -170,16 +172,65 @@ def main():
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer, T_max=args.epochs
     )
-    scaler = torch.amp.GradScaler("cuda")
+    scaler = torch.amp.GradScaler("cuda", init_scale=1024.0, growth_interval=2000)
 
     best_val = float("inf")
     stale = 0
     history = []
+    start_epoch = 1
     best_path = output / "food101_v2_best.pt"
     latest_path = output / "food101_v2_latest.pt"
     started = time.time()
 
-    for epoch in range(1, args.epochs + 1):
+    if args.resume:
+        if not latest_path.exists():
+            raise FileNotFoundError(
+                f"Cannot resume: checkpoint not found: {latest_path}"
+            )
+
+        resume_checkpoint = torch.load(
+            latest_path, map_location=device, weights_only=False
+        )
+
+        required = {
+            "model", "optimizer", "scheduler", "scaler",
+            "epoch", "best_val", "stale_epochs", "history"
+        }
+        missing = required.difference(resume_checkpoint)
+        if missing:
+            raise RuntimeError(
+                f"Checkpoint is missing resume state: {sorted(missing)}"
+            )
+
+        model.load_state_dict(resume_checkpoint["model"], strict=True)
+        optimizer.load_state_dict(resume_checkpoint["optimizer"])
+        scheduler.load_state_dict(resume_checkpoint["scheduler"])
+        scaler.load_state_dict(resume_checkpoint["scaler"])
+
+        start_epoch = int(resume_checkpoint["epoch"]) + 1
+        best_val = float(resume_checkpoint["best_val"])
+        stale = int(resume_checkpoint["stale_epochs"])
+        history = resume_checkpoint["history"]
+
+        if start_epoch > args.epochs:
+            raise ValueError(
+                f"Checkpoint already reached epoch {start_epoch - 1}, "
+                f"but requested total epochs is {args.epochs}."
+            )
+
+        if not best_path.exists():
+            raise FileNotFoundError(
+                f"Best validation checkpoint is missing: {best_path}"
+            )
+
+        print(
+            f"Resuming from epoch {start_epoch}; "
+            f"previous best validation loss: {best_val:.6f}; "
+            f"stale epochs: {stale}",
+            flush=True,
+        )
+
+    for epoch in range(start_epoch, args.epochs + 1):
         epoch_start = time.time()
 
         train_metrics = train_epoch(
@@ -306,3 +357,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

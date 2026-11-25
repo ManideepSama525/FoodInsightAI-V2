@@ -1,3 +1,9 @@
+
+export type GeneratedRecipeResult = {
+  title: string; answer: string; ingredients: string[]; steps: string[];
+  model: string; adapter?: string | null; note: string;
+};
+
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
 
 export type Nutrient = {
@@ -43,6 +49,25 @@ export type Recipe = {
   nutrition_per_serving: Nutrient[];
 };
 
+export type RecognizedIngredient = {
+  ingredient_name: string;
+  food_id: number | null;
+  quantity: number | null;
+  unit: string | null;
+  mapping_status: string;
+  quantity_status: string;
+};
+export type AssociatedRecipe = {
+  recipe_id: number;
+  recipe_name: string;
+  servings: number;
+  source: string | null;
+  source_url: string | null;
+  source_attribution: string | null;
+  association_source: string;
+  association_provenance: Record<string, unknown>;
+  ingredients: RecognizedIngredient[];
+};
 export type Recognition = {
   status: string;
   predicted_food: string | null;
@@ -51,6 +76,43 @@ export type Recognition = {
   model_version: string | null;
   top_predictions: { food_label: string; confidence: number }[];
   message: string | null;
+  canonical_dish_id?: number | null;
+  canonical_dish_name?: string | null;
+  associated_recipes: AssociatedRecipe[];
+};
+
+export type FreshnessPrediction = {
+  model_version: string;
+  category: string;
+  predicted_label: string;
+  confidence: number;
+  probabilities: Record<string, number>;
+  device: string;
+  safety_notice: string;
+};
+export type ToxiFruitPrediction = {
+  predicted_class: string;
+  category: "fruit" | "vegetable";
+  fruit: "Apple" | "Banana" | "Malta" | "Mango" | null;
+  vegetable: string | null;
+  condition: "fresh_control" | "formalin_treated" | null;
+  confidence: number;
+  probabilities: Record<string, number>;
+  model: string;
+  model_version: string;
+  interpretation: string;
+};
+
+export type CinnamonFTIRAnalysis = {
+  sample_id: string | null;
+  food: string;
+  adulteration_status: "Pure_Cinnamon" | "Adulterated";
+  is_adulterated: boolean;
+  adulterant_type: "Peanut" | "Walnut" | "Wood_Dust" | null;
+  estimated_concentration_percent: number;
+  concentration_unit: "percent";
+  model_version: string;
+  validation_note: string;
 };
 
 export type User = {
@@ -75,6 +137,52 @@ export type DiaryEntry = {
   meal_type: "breakfast" | "lunch" | "dinner" | "snack";
   consumed_at: string;
   notes: string | null;
+};
+
+
+export type RagClaim = {
+  food_id: number;
+  nutrient_key: string;
+  amount: number;
+  unit: string;
+  basis_g: number;
+};
+
+export type RagEvidence = {
+  source_type: string;
+  source_id: string | number;
+  title?: string | null;
+  content?: string | null;
+  provenance?: Record<string, unknown>;
+  provenance_records?: Record<string, unknown>[];
+  retrieval_sources?: string[];
+  rank_score?: number;
+  similarity_score?: number | null;
+  source_conflicts?: unknown[];
+  incomparable_measurements?: unknown[];
+  invalid_measurements?: unknown[];
+};
+
+export type RagCitation = {
+  citation_id: string;
+  source_type: string;
+  source_id: string | number;
+  title?: string | null;
+  provenance: Record<string, unknown>[];
+};
+
+export type RagResponse = {
+  query: string;
+  answer: string;
+  retrieved_count: number;
+  evidence: RagEvidence[];
+  citations: RagCitation[];
+  verification: {
+    status: string;
+    reason: string;
+    supporting_evidence: Record<string, unknown>[];
+    incomparable_evidence: Record<string, unknown>[];
+  } | null;
 };
 
 const TOKEN_KEY = "foodinsightai_access_token";
@@ -126,7 +234,235 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+
+// PHASE_3E_REGULATORY_API
+export type RegulatoryProductType =
+  | "bread" | "coffee_chicory" | "milk_product"
+  | "edible_oil" | "sweetener_product" | "other";
+
+export type RegulatoryTimeline = {
+  assessment_date: string;
+  amendment_count: number;
+  product_compliance_assessed: boolean;
+  compliance_verdict: null;
+  notice: string;
+  amendments: {
+    amendment_id: string;
+    effective_date: string | null;
+    status: string;
+    compliance_verdict: null;
+  }[];
+};
+
+export type RegulatoryScreening = {
+  product_type: RegulatoryProductType;
+  assessment_date: string;
+  candidate_count: number;
+  screening_only: boolean;
+  compliance_verdict: null;
+  candidate_amendments: {
+    amendment_id: string;
+    date_status: string;
+    affected_provisions: string[];
+    compliance_verdict: null;
+  }[];
+};
+
+export type RegulatoryBreadResult = {
+  bread_type: string;
+  data_sufficiency: string;
+  minimum_whole_wheat_flour_percent_of_total_flour: number;
+  supplied_whole_wheat_flour_percent_of_total_flour: number | null;
+  compliance_verdict: null;
+  legal_review_status: string;
+};
+
+
+// PHASE_3G_DOCUMENT_API
+
+export type RegulatoryLabelField = {
+  field: string;
+  value: string;
+  evidence_text: string;
+  line_number: number;
+  verification_status: "EXTRACTED_UNVERIFIED";
+};
+
+export type RegulatoryLabelExtraction = {
+  extraction_method: string;
+  source_text_truncated: boolean;
+  fields: RegulatoryLabelField[];
+  detected_field_count: number;
+  not_detected: string[];
+  facts_verified: false;
+  compliance_verdict: null;
+  notice: string;
+};
+
+export type RegulatoryDocumentPreview = {
+  filename: string;
+  content_type: string;
+  size_bytes: number;
+  document_kind: "pdf" | "image";
+  extraction_status: string;
+  extraction_engine: string | null;
+  label_fields?: RegulatoryLabelExtraction;
+  page_count: number | null;
+  extracted_text: string;
+  extracted_character_count: number;
+  truncated: boolean;
+  stored: false;
+  regulatory_facts_verified: false;
+  compliance_verdict: null;
+  notice: string;
+};
+
+
+// PHASE_3H_DOCUMENT_EXTRACTION_API
+
+// PHASE_3J_LABEL_SCREENING_API
+export type RegulatoryLabelFinding = {
+  field: string;
+  status: string;
+  severity: string;
+  value: string | null;
+  evidence_text: string | null;
+  line_number: number | null;
+  message: string;
+};
+
+
+// PHASE_3L3_CLAUSE_PREVIEW_TYPES
+export type RegulatoryClauseEvidence = {
+  field: string;
+  value: string | null;
+  evidence_text: string | null;
+  line_number: number | null;
+  verification_status: string;
+};
+
+export type RegulatoryClauseCandidate = {
+  amendment_id: string;
+  provision_reference: string;
+  date_status: string | null;
+  source_text_sha256: string | null;
+  suggested_evidence_fields: string[];
+  extracted_evidence: RegulatoryClauseEvidence[];
+  field_mapping_status: string;
+  product_applicability_verified: false;
+  legal_review_status: string;
+  requirement_text_verified: false;
+  exceptions_checked: false;
+  supersession_checked: false;
+  rule_executed: false;
+  compliance_verdict: null;
+  finding_status: string;
+};
+
+export type RegulatoryClausePreview = {
+  status?: string;
+  provision_candidate_count: number;
+  provision_candidates: RegulatoryClauseCandidate[];
+  legal_review_complete: false;
+  rule_execution_performed: false;
+  compliance_verdict: null;
+  notice: string;
+};
+
+export type RegulatoryLabelAssessment = {
+  clause_preview?: RegulatoryClausePreview;
+  product_type: RegulatoryProductType;
+  assessment_date: string;
+  document_type: string;
+  document_type_verified: false;
+  text_extraction_status: string;
+  compliance_verdict: null;
+  document_facts_verified: false;
+  legal_review_status: string;
+  detected_field_count: number;
+  findings: RegulatoryLabelFinding[];
+  candidate_amendment_count: number;
+  potentially_relevant_amendments: {
+    amendment_id: string;
+    date_status: string;
+    affected_provisions: string[];
+    compliance_verdict: null;
+  }[];
+  source_document_warning: string | null;
+  notice: string;
+};
+
+export function regulatoryLabelAssessment(
+  file: File,
+  productType: RegulatoryProductType,
+  assessmentDate: string
+) {
+  const data = new FormData();
+  data.append("file", file);
+  data.append("product_type", productType);
+  data.append("assessment_date", assessmentDate);
+  return request<RegulatoryLabelAssessment>(
+    "/regulatory/assessment/label-preview",
+    { method: "POST", body: data }
+  );
+}
+
+export function regulatoryDocumentExtract(file: File) {
+  const payload = new FormData();
+  payload.append("file", file);
+  return request<RegulatoryDocumentPreview>(
+    "/regulatory/documents/extract",
+    { method: "POST", body: payload }
+  );
+}
+
+export function regulatoryDocumentPreview(file: File) {
+  const payload = new FormData();
+  payload.append("file", file);
+  return request<RegulatoryDocumentPreview>("/regulatory/documents/preview", {
+    method: "POST",
+    body: payload
+  });
+}
+
+export function regulatoryAmendmentStatus(asOf: string) {
+  return request<RegulatoryTimeline>(
+    `/regulatory/amendments/status?as_of=${encodeURIComponent(asOf)}`
+  );
+}
+
+export function regulatoryProductPreview(
+  productType: RegulatoryProductType,
+  assessmentDate: string
+) {
+  return request<RegulatoryScreening>("/regulatory/assessment/preview", {
+    method: "POST",
+    body: JSON.stringify({
+      product_type: productType,
+      assessment_date: assessmentDate
+    })
+  });
+}
+
+export function regulatoryBreadPreview(payload: {
+  bread_type: "whole_wheat_bread" | "wheat_bread" | "brown_bread";
+  assessment_date: string;
+  whole_wheat_flour_percent: number | null;
+}) {
+  return request<RegulatoryBreadResult>(
+    "/regulatory/assessment/bread-facts-preview",
+    {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }
+  );
+}
+
 export const api = {
+  generateRecipe: (payload: { title: string }) =>
+    request<GeneratedRecipeResult>("/recipes/generate", { method: "POST", body: JSON.stringify(payload) }),
+
+
   register: (payload: { email: string; password: string; display_name: string }) =>
     request<User>("/auth/register", {
       method: "POST",
@@ -181,14 +517,42 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
-  recognize: (file: File) => {
+  recognize: (file: File, model: "food101" | "indian" = "food101") => {
     const data = new FormData();
     data.append("file", file);
-    return request<Recognition>("/recognition/predict", {
+    return request<Recognition>(`/recognition/predict?model=${model}`, {
       method: "POST",
       body: data,
     });
   },
+
+  predictFreshness: (file: File, category: string) => {
+    const data = new FormData();
+    data.append("category", category);
+    data.append("file", file);
+
+    return request<FreshnessPrediction>("/freshness/predict", {
+      method: "POST",
+      body: data,
+    });
+  },
+  screenProduce: (file: File) => {
+    const data = new FormData();
+    data.append("file", file);
+    return request<ToxiFruitPrediction>("/food-fraud/produce/visual-screening", {
+      method: "POST",
+      body: data,
+    });
+  },
+
+  analyzeCinnamonFTIR: (payload: {
+    sample_id: string;
+    spectral_values: number[];
+  }) =>
+    request<CinnamonFTIRAnalysis>("/food-fraud/cinnamon/ftir-analysis", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 
   diary: () => request<DiaryEntry[]>("/diary"),
 
@@ -235,6 +599,16 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ ingredients }),
     }),
+  ragQuery: (payload: {
+    query: string;
+    top_k?: number;
+    claim?: RagClaim;
+  }) =>
+    request<RagResponse>("/rag/query", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
   deleteDiaryEntry: (id: number) =>
     request<void>(`/diary/${id}`, { method: "DELETE" }),
 };
@@ -294,3 +668,41 @@ export type FoodSafetyResult = {
   unknown_ingredients: string[];
   disclaimer: string;
 };
+
+
+// PHASE_3L11_BREAD_DRAFT_API
+export type RegulatoryBreadDraftRequest = {
+  bread_type: string;
+  ingredient_percent: string | null;
+  measurement_basis: "100g_flour";
+};
+
+export type RegulatoryBreadDraftResponse = {
+  bread_type: string;
+  specialty_ingredient: string;
+  draft_minimum_percent: number;
+  measurement_basis: string;
+  source_amendment_id: string;
+  source_clause_id: string;
+  source_pdf_page: number;
+  source_pdf_sha256: string;
+  supplied_percent: string | null;
+  numerical_screening_status: string;
+  product_facts_verified: false;
+  legal_review_complete: false;
+  rule_executed: false;
+  compliance_verdict: null;
+  notice: string;
+};
+
+export async function regulatoryBreadDraftPreview(
+  payload: RegulatoryBreadDraftRequest
+): Promise<RegulatoryBreadDraftResponse> {
+  return request<RegulatoryBreadDraftResponse>(
+    "/regulatory/assessment/bread-draft-preview",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }
+  );
+}
