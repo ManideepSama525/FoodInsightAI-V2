@@ -1,0 +1,23 @@
+# Overlay for the existing FoodInsightAI docker-compose.yml.
+# Use ONLY from the project root: docker compose -f docker-compose.yml -f team-services/docker-compose.models.override.yml ...
+# This changes the image build sources for freshness/toxifruit, not other services.
+services:
+  freshness:
+    build:
+      context: ./team-services/freshness-service
+      dockerfile: Dockerfile
+    image: foodinsightai-v2-freshness:team-v3
+    environment:
+      FRESHNESS_CHECKPOINT: /app/outputs/freshness_v1/best_model.pt
+      FRESHNESS_DEVICE: cpu
+    volumes:
+      - ./freshness/outputs/freshness_v1/best_model.pt:/app/outputs/freshness_v1/best_model.pt:ro
+  toxifruit:
+    build:
+      context: ./team-services/toxifruit-service
+      dockerfile: Dockerfile
+    image: foodinsightai-v2-toxifruit:team-v3
+    environment:
+      TOXIFRUIT_CHECKPOINT: /app/outputs/food_fraud_toxifruit_vegetable_grouped_letterbox_v2/best_model.pt
+    volumes:
+      - ./toxifruit/outputs/food_fraud_toxifruit_vegetable_grouped_letterbox_v2/best_model.pt:/app/outputs/food_fraud_toxifruit_vegetable_grouped_letterbox_v2/best_model.pt:ro

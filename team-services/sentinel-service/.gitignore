@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.db
+*.sqlite*
+*.pkl
+.env
+.env.*
+backend/app/ai/model.pkl
+backend/app/ai/vectorizer.pkl
+*.db-*
+.runtime/
+.venv/

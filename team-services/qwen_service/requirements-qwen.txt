@@ -1,0 +1,10 @@
+# Recovered service runtime versions, EXCLUDING torch/torchvision and CUDA drivers.
+# Install an RTX-compatible PyTorch GPU build separately before this file.
+fastapi==0.162.0
+uvicorn==0.54.0
+pydantic==2.13.5
+transformers==5.19.0
+accelerate==1.15.0
+bitsandbytes==0.50.2
+peft==0.21.3
+huggingface_hub

@@ -1,0 +1,147 @@
+[
+  {
+    "path": "README.md",
+    "bytes": 4251,
+    "sha256": "1c8e94bce6cc9e62a83a233c2f565c4faaa6bdab040a3b516b6c2751d7829901"
+  },
+  {
+    "path": "docker-compose.models.override.yml",
+    "bytes": 1115,
+    "sha256": "bfb06c957628ee8ac49c28c152dfe45ff74d4ca2a76f127fb6b6a62a5095a73c"
+  },
+  {
+    "path": "freshness-service/Dockerfile",
+    "bytes": 650,
+    "sha256": "e7636b5af626612ae387f3790ea6d47244ceca3e95430fc8a0f415fe840d9600"
+  },
+  {
+    "path": "freshness-service/freshness_service/__init__.py",
+    "bytes": 5,
+    "sha256": "f01a374e9c81e3db89b3a42940c4d6a5447684986a1296e42bf13f196eed6295"
+  },
+  {
+    "path": "freshness-service/freshness_service/main.py",
+    "bytes": 3397,
+    "sha256": "a4ca8ef6d54f0db276d21fc030401349a7e92b30481b66ff1d4cc537ea8cb0c0"
+  },
+  {
+    "path": "freshness-service/freshness_service/model_loader.py",
+    "bytes": 4430,
+    "sha256": "70f31c60aa20b0dbfb71063ee59ef1a9dee3c18e187848163ce601787ce35d53"
+  },
+  {
+    "path": "freshness-service/freshness_service/preprocessing.py",
+    "bytes": 424,
+    "sha256": "d24c416f9f517a5dd2b454e5ee6e2dc2b2d975030ec98c03b56f4a6d790cefd5"
+  },
+  {
+    "path": "freshness-service/freshness_service/schemas.py",
+    "bytes": 437,
+    "sha256": "1697dd5f7e061d25971a3757f115aeb021b121aa1a973048bb292294bca0b51f"
+  },
+  {
+    "path": "freshness-service/requirements.txt",
+    "bytes": 163,
+    "sha256": "81dbabadbe9d5d3ce2cb59c01cc044e2c65e16ec3fc38ae368f5230a59726559"
+  },
+  {
+    "path": "freshness-service/training/freshness_model.py",
+    "bytes": 3556,
+    "sha256": "7541edd5fb88c041dc3e33e86eabffb95354f196a248fd0c221771c69efac4d5"
+  },
+  {
+    "path": "qwen_service/__init__.py",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "qwen_service/base_service.py",
+    "bytes": 6248,
+    "sha256": "0ee6b773d220eb1702cfeaa62c135680465ce3aec79c67d292bceee6e748006a"
+  },
+  {
+    "path": "qwen_service/download_qwen.py",
+    "bytes": 1103,
+    "sha256": "377e065f824480995718b73986b85f4d571ba81ddccdf68ac22a592bc0115275"
+  },
+  {
+    "path": "qwen_service/inference/__init__.py",
+    "bytes": 730,
+    "sha256": "ff087b2e4a58ed078c555b68b6d3a28bea66a4621ad46627e1f5d4579eb342fd"
+  },
+  {
+    "path": "qwen_service/inference/generator.py",
+    "bytes": 4550,
+    "sha256": "0ef01fc0817a3b3f6e7cea890e4d4d02be64823fb0ff57a248475d06efafab65"
+  },
+  {
+    "path": "qwen_service/inference/model_loader.py",
+    "bytes": 5727,
+    "sha256": "02f8dda8c51bc1593b7456800387040dfacbee580d6f40a5bf228ed4b528772d"
+  },
+  {
+    "path": "qwen_service/inference/parsing.py",
+    "bytes": 3713,
+    "sha256": "44219d16cb33d2e2f3256bd35e6e8630dead7c5e72565d4670349009db73ffe6"
+  },
+  {
+    "path": "qwen_service/inference/prompts.py",
+    "bytes": 2402,
+    "sha256": "cff2a6d2331713594a149fe89acf1f73dcd4fc7a170faad32725eb6b377facf0"
+  },
+  {
+    "path": "qwen_service/inference/settings.py",
+    "bytes": 5346,
+    "sha256": "a91faffd579e52d4a872bc10a4eefe61f66a209357ebed258857900c91be7400"
+  },
+  {
+    "path": "qwen_service/probe_service.py",
+    "bytes": 1453,
+    "sha256": "92478ed9fc34c0bb46773a54914aa8f080c786a396252dc10ac4a1e93a7c8845"
+  },
+  {
+    "path": "qwen_service/quality.py",
+    "bytes": 1475,
+    "sha256": "6518a3202fef6f0dc270c473f05e181b16fd0a2e1cc1e051337614941c03059c"
+  },
+  {
+    "path": "qwen_service/requirements-qwen.txt",
+    "bytes": 299,
+    "sha256": "61a480a8b8ae3f2797ad8a2e878318efaccd434701504ab6763ec158016ebbb7"
+  },
+  {
+    "path": "qwen_service/run_service.py",
+    "bytes": 5076,
+    "sha256": "36cd88429992fb74e92cc1c77eeb4a40ddc290eb394eea429282cabe445edcbd"
+  },
+  {
+    "path": "scripts/Install-ModelAssets.ps1",
+    "bytes": 3841,
+    "sha256": "84efde4ba34776075792e36dd294106a18c64086ea44f4533f041564dbf35efe"
+  },
+  {
+    "path": "scripts/Test-ModelServices.ps1",
+    "bytes": 1074,
+    "sha256": "e0cd34ab6228c315c68dee562a2178d5841896f0ecd2dc9ba59bb0fc9ce50e21"
+  },
+  {
+    "path": "toxifruit-service/Dockerfile",
+    "bytes": 598,
+    "sha256": "83da017b5f6d811a77aa059d97cf426dd45c6d5a11e7a48579962d240ea0757f"
+  },
+  {
+    "path": "toxifruit-service/main.py",
+    "bytes": 2688,
+    "sha256": "bc581fb7fb16f00498b8ad6a4c3c8100c894d39c2b87961ab0741b7bbee40ffa"
+  },
+  {
+    "path": "toxifruit-service/predictor.py",
+    "bytes": 5291,
+    "sha256": "2cd6a1be8a9b2ec318f3baa99b2c2b3d5f3253f30c91c556fdd29e511a846f75"
+  },
+  {
+    "path": "toxifruit-service/requirements.txt",
+    "bytes": 163,
+    "sha256": "3e6be3a1319cb1454f61f7565484fb4001a6b58f3ca6d999911257bf07d0bdee"
+  }
+]
